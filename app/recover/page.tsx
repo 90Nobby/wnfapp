@@ -57,7 +57,7 @@ export default function RecoverPage() {
         }}
         className="relative z-10 w-full max-w-md px-4"
       >
-        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-zinc-700">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

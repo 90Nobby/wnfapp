@@ -110,7 +110,7 @@ export default function ManagerCodePage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 text-center max-w-md"
+          className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-zinc-700 text-center max-w-md"
         >
           <div className="text-6xl mb-4">❌</div>
           <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">Invalid Code</h1>
@@ -141,7 +141,7 @@ export default function ManagerCodePage() {
           }}
           className="relative z-10 w-full max-w-md px-4"
         >
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+          <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 dark:border-zinc-700">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
