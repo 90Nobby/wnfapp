@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { AuroraBackground } from '@/components/ui/aurora-background';
+import { motion } from 'framer-motion';
 
 export default function ManagerCodePage() {
   const router = useRouter();
@@ -40,8 +42,7 @@ export default function ManagerCodePage() {
       }
 
       if (data.hasManager) {
-        // Manager already exists, just set cookie and redirect
-        // TODO: Set cookie for existing manager
+        // Manager already exists, redirect to dashboard
         router.push('/manager/dashboard');
       } else {
         // Need to set up manager account
@@ -90,45 +91,80 @@ export default function ManagerCodePage() {
 
   if (loading && !needsSetup) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
-        <div className="text-xl text-gray-600">Verifying manager code...</div>
-      </div>
+      <AuroraBackground>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xl text-gray-900 dark:text-white font-medium"
+        >
+          Verifying manager code...
+        </motion.div>
+      </AuroraBackground>
     );
   }
 
   if (error && !needsSetup) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Invalid Code</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
+      <AuroraBackground>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 text-center max-w-md"
+        >
+          <div className="text-6xl mb-4">❌</div>
+          <h1 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">Invalid Code</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => router.push('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg"
+            className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg shadow-blue-500/50"
           >
             Go Home
-          </button>
-        </div>
-      </div>
+          </motion.button>
+        </motion.div>
+      </AuroraBackground>
     );
   }
 
   if (needsSetup) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">🎯 Manager Setup</h1>
-              <p className="text-gray-600">Create your manager account</p>
-              <p className="text-xs text-gray-500 mt-2">
-                Bookmark this page to access manager features
+      <AuroraBackground>
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.3,
+            duration: 0.8,
+            ease: 'easeInOut',
+          }}
+          className="relative z-10 w-full max-w-md px-4"
+        >
+          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <div className="text-6xl mb-4">🎯</div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent mb-2">
+                Manager Setup
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mb-2">Create your manager account</p>
+              <p className="text-xs text-gray-500 dark:text-gray-500">
+                💡 Bookmark this page to access manager features
               </p>
-            </div>
+            </motion.div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
+              >
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   First Name
                 </label>
                 <input
@@ -137,13 +173,17 @@ export default function ManagerCodePage() {
                   required
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-200"
                   placeholder="John"
                 />
-              </div>
+              </motion.div>
 
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.7, duration: 0.5 }}
+              >
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Last Name
                 </label>
                 <input
@@ -152,13 +192,17 @@ export default function ManagerCodePage() {
                   required
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-200"
                   placeholder="Smith"
                 />
-              </div>
+              </motion.div>
 
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.8, duration: 0.5 }}
+              >
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Username
                 </label>
                 <input
@@ -167,28 +211,37 @@ export default function ManagerCodePage() {
                   required
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  className="w-full px-4 py-3 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-200"
                   placeholder="johnsmith"
                 />
-              </div>
+              </motion.div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">{error}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+                >
+                  <p className="text-sm text-red-800 dark:text-red-400">{error}</p>
+                </motion.div>
               )}
 
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9, duration: 0.5 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-base"
+                className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white font-semibold py-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/50"
               >
                 {loading ? 'Setting up...' : 'Create Manager Account'}
-              </button>
+              </motion.button>
             </form>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </AuroraBackground>
     );
   }
 
