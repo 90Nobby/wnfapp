@@ -49,11 +49,10 @@ export async function POST(request: NextRequest) {
       wasReserveLastMatch: false,
     });
 
-    // Create manager link
-    await db.insert(managerLinks).values({
-      code,
-      userId,
-    });
+    // Update manager link with the real userId (replacing 'pending')
+    await db.update(managerLinks)
+      .set({ userId })
+      .where(eq(managerLinks.code, code));
 
     // Set cookie
     await setUserCookie(userId);

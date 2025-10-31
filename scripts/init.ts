@@ -19,6 +19,14 @@ async function init() {
     // Generate a manager code
     const code = generateManagerCode();
 
+    // Insert the manager link into the database with a placeholder userId
+    const { managerLinks } = schema;
+
+    await db.insert(managerLinks).values({
+      code,
+      userId: 'pending',
+    });
+
     console.log('\n🎯 Football Match Management App - Initialization\n');
     console.log('Database initialized successfully!\n');
     console.log('📋 Manager Access Link:');
@@ -26,9 +34,7 @@ async function init() {
     console.log('\n💡 Save this link to access manager features!');
     console.log('   The first person to visit this link will set up the manager account.\n');
 
-    // Note: We don't insert the manager link yet - it will be created when first accessed
-    // This is just to provide the code to use
-
+    sqlite.close();
     process.exit(0);
   } catch (error) {
     console.error('Initialization error:', error);
