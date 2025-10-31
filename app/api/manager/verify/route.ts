@@ -15,31 +15,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate code format (should be 16 alphanumeric characters)
+    if (!/^[a-zA-Z0-9]{16}$/.test(code)) {
+      return NextResponse.json(
+        { error: 'Invalid manager code format' },
+        { status: 400 }
+      );
+    }
+
+    // Check if this code already has a manager link
     const link = await db
       .select()
       .from(managerLinks)
       .where(eq(managerLinks.code, code))
       .limit(1);
 
-    if (!link[0]) {
-      return NextResponse.json(
-        { error: 'Invalid manager code' },
-        { status: 404 }
-      );
+    if (link[0]) {
+      // Link exists, check if manager user exists
+      const manager = await db
+        .select()
+        .from(users)
+        .where(eq(users.userId, link[0].userId))
+        .limit(1);
+
+      return NextResponse.json({
+        valid: true,
+        hasManager: manager.length > 0,
+        managerId: link[0].userId,
+      });
+    } else {
+      // Code doesn't exist in database yet - this is a new manager code
+      // Allow it and indicate no manager has been set up yet
+      return NextResponse.json({
+        valid: true,
+        hasManager: false,
+        managerId: null,
+      });
     }
-
-    // Get manager user
-    const manager = await db
-      .select()
-      .from(users)
-      .where(eq(users.userId, link[0].userId))
-      .limit(1);
-
-    return NextResponse.json({
-      valid: true,
-      hasManager: manager.length > 0,
-      managerId: link[0].userId,
-    });
   } catch (error) {
     console.error('Verify manager code error:', error);
     return NextResponse.json(
