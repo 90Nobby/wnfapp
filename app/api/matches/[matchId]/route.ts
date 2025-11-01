@@ -48,6 +48,8 @@ export async function GET(
         firstName: users.firstName,
         lastName: users.lastName,
         username: users.username,
+        rating: users.rating,
+        position: users.position,
       })
       .from(teams)
       .innerJoin(users, eq(teams.userId, users.userId))

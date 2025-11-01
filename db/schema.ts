@@ -30,6 +30,8 @@ export const users = sqliteTable('users', {
   balance: real('balance').notNull().default(0.00),
   gamesPlayed: integer('games_played').notNull().default(0),
   wasReserveLastMatch: integer('was_reserve_last_match', { mode: 'boolean' }).notNull().default(false),
+  rating: real('rating'), // 1.0-5.0 in 0.5 increments, manager-only field
+  position: text('position'), // D, M, S - manager-only field
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
 });
 

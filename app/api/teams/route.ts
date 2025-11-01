@@ -82,12 +82,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get confirmed players
+    // Get confirmed players with their ratings and positions
     const confirmed = await db
       .select({
         userId: availability.userId,
+        rating: users.rating,
+        position: users.position,
       })
       .from(availability)
+      .innerJoin(users, eq(availability.userId, users.userId))
       .where(
         and(
           eq(availability.matchId, matchId),
@@ -103,13 +106,59 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Shuffle players
-    const shuffled = [...confirmed].sort(() => Math.random() - 0.5);
+    // Snake draft algorithm
+    // 1. Separate players by position (D, M, S) and those without position
+    const defenders = confirmed.filter(p => p.position === 'D')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const midfielders = confirmed.filter(p => p.position === 'M')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const strikers = confirmed.filter(p => p.position === 'S')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const unassigned = confirmed.filter(p => !p.position)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-    // Split into two teams
-    const half = Math.ceil(shuffled.length / 2);
-    const blueTeam = shuffled.slice(0, half).map(p => p.userId);
-    const redTeam = shuffled.slice(half).map(p => p.userId);
+    // 2. Snake draft within each position group
+    const snakeDraft = (players: typeof confirmed) => {
+      const blue: string[] = [];
+      const red: string[] = [];
+      let toBlue = true;
+
+      for (let i = 0; i < players.length; i++) {
+        if (toBlue) {
+          blue.push(players[i].userId);
+        } else {
+          red.push(players[i].userId);
+        }
+
+        // Snake: flip direction every 2 players
+        if ((i + 1) % 2 === 0) {
+          toBlue = !toBlue;
+        }
+      }
+
+      return { blue, red };
+    };
+
+    // 3. Draft each position group
+    const draftedDefenders = snakeDraft(defenders);
+    const draftedMidfielders = snakeDraft(midfielders);
+    const draftedStrikers = snakeDraft(strikers);
+    const draftedUnassigned = snakeDraft(unassigned);
+
+    // 4. Combine all positions
+    const blueTeam = [
+      ...draftedDefenders.blue,
+      ...draftedMidfielders.blue,
+      ...draftedStrikers.blue,
+      ...draftedUnassigned.blue,
+    ];
+
+    const redTeam = [
+      ...draftedDefenders.red,
+      ...draftedMidfielders.red,
+      ...draftedStrikers.red,
+      ...draftedUnassigned.red,
+    ];
 
     // Delete existing teams
     await db.delete(teams).where(eq(teams.matchId, matchId));

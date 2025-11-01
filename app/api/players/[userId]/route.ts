@@ -21,7 +21,8 @@ export async function PATCH(
     }
 
     const { userId } = await params;
-    const { action, amount } = await request.json();
+    const body = await request.json();
+    const { action, amount, rating, position } = body;
 
     // Get player
     const player = await db.select().from(users).where(eq(users.userId, userId)).limit(1);
@@ -31,6 +32,32 @@ export async function PATCH(
         { error: 'Player not found' },
         { status: 404 }
       );
+    }
+
+    if (action === 'updateRating') {
+      // Update player rating
+      await db
+        .update(users)
+        .set({ rating })
+        .where(eq(users.userId, userId));
+
+      return NextResponse.json({
+        success: true,
+        rating
+      });
+    }
+
+    if (action === 'updatePosition') {
+      // Update player position
+      await db
+        .update(users)
+        .set({ position })
+        .where(eq(users.userId, userId));
+
+      return NextResponse.json({
+        success: true,
+        position
+      });
     }
 
     if (action === 'payment') {

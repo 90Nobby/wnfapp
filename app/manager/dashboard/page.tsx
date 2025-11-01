@@ -14,6 +14,8 @@ interface User {
   isManager: boolean;
   balance: number;
   gamesPlayed: number;
+  rating?: number | null;
+  position?: string | null;
 }
 
 interface Match {
@@ -258,6 +260,111 @@ export default function ManagerDashboard() {
     }
   };
 
+  const handleUpdatePlayerRating = async (userId: string, rating: number | null) => {
+    try {
+      const response = await fetch(`/api/players/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'updateRating',
+          rating,
+        }),
+      });
+
+      if (response.ok) {
+        await loadPlayers();
+        showToast('Player rating updated');
+      }
+    } catch (error) {
+      console.error('Update rating error:', error);
+      showToast('Failed to update rating', 'error');
+    }
+  };
+
+  const handleUpdatePlayerPosition = async (userId: string, position: string | null) => {
+    try {
+      const response = await fetch(`/api/players/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'updatePosition',
+          position,
+        }),
+      });
+
+      if (response.ok) {
+        await loadPlayers();
+        showToast('Player position updated');
+      }
+    } catch (error) {
+      console.error('Update position error:', error);
+      showToast('Failed to update position', 'error');
+    }
+  };
+
+  const handleSwapPlayer = async (playerId: string, currentTeam: 'blue' | 'red') => {
+    if (!selectedMatch) return;
+
+    try {
+      // Get current teams
+      const blueTeam = matchDetails.teams
+        .filter((t: any) => t.team === 'blue')
+        .map((t: any) => t.userId);
+      const redTeam = matchDetails.teams
+        .filter((t: any) => t.team === 'red')
+        .map((t: any) => t.userId);
+
+      // Swap player
+      let newBlueTeam = [...blueTeam];
+      let newRedTeam = [...redTeam];
+
+      if (currentTeam === 'blue') {
+        newBlueTeam = newBlueTeam.filter(id => id !== playerId);
+        newRedTeam.push(playerId);
+      } else {
+        newRedTeam = newRedTeam.filter(id => id !== playerId);
+        newBlueTeam.push(playerId);
+      }
+
+      // Update teams in database
+      const response = await fetch('/api/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId: selectedMatch,
+          blueTeam: newBlueTeam,
+          redTeam: newRedTeam,
+        }),
+      });
+
+      if (response.ok) {
+        await loadMatchDetails(selectedMatch);
+        showToast('Player swapped');
+      }
+    } catch (error) {
+      console.error('Swap player error:', error);
+      showToast('Failed to swap player', 'error');
+    }
+  };
+
+  const calculateTeamRating = (team: any[]) => {
+    const total = team.reduce((sum, player) => sum + (player.rating || 0), 0);
+    return total;
+  };
+
+  const getBalanceIndicator = (blueTotal: number, redTotal: number) => {
+    const diff = Math.abs(blueTotal - redTotal);
+    if (diff <= 1) return { emoji: '✓', color: 'text-green-600' };
+    if (diff <= 3) return { emoji: '⚠️', color: 'text-yellow-600' };
+    return { emoji: '🔴', color: 'text-red-600' };
+  };
+
   const shareTeams = () => {
     if (!matchDetails || !matchDetails.teams.length) return;
 
@@ -274,7 +381,7 @@ export default function ManagerDashboard() {
     const shareText = `Teams for tonight:\n\n🔵 Blue: ${blueTeam}\n\n🔴 Red: ${redTeam}`;
 
     navigator.clipboard.writeText(shareText);
-    alert('Teams copied to clipboard!');
+    showToast('Teams copied to clipboard!');
   };
 
   if (loading) {
@@ -487,59 +594,244 @@ export default function ManagerDashboard() {
                     </div>
                   </div>
 
-                  {matchDetails.teams.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="font-bold text-lg mb-3">Teams</h4>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="bg-blue-50 rounded-lg p-4">
-                          <h5 className="font-bold text-blue-900 mb-2">🔵 Blue Team</h5>
-                          <div className="space-y-1">
-                            {matchDetails.teams
-                              .filter((t: any) => t.team === 'blue')
-                              .map((t: any) => (
-                                <div key={t.id} className="text-blue-800">
-                                  {t.firstName} {t.lastName}
-                                </div>
-                              ))}
+                  {matchDetails.teams.length > 0 && (() => {
+                    const blueTeam = matchDetails.teams.filter((t: any) => t.team === 'blue');
+                    const redTeam = matchDetails.teams.filter((t: any) => t.team === 'red');
+                    const blueTotal = calculateTeamRating(blueTeam);
+                    const redTotal = calculateTeamRating(redTeam);
+                    const balance = getBalanceIndicator(blueTotal, redTotal);
+
+                    // Group by position
+                    const groupByPosition = (team: any[]) => {
+                      return {
+                        D: team.filter(p => p.position === 'D').sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+                        M: team.filter(p => p.position === 'M').sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+                        S: team.filter(p => p.position === 'S').sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+                        unassigned: team.filter(p => !p.position).sort((a, b) => (b.rating || 0) - (a.rating || 0)),
+                      };
+                    };
+
+                    const blueGrouped = groupByPosition(blueTeam);
+                    const redGrouped = groupByPosition(redTeam);
+
+                    return (
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-bold text-lg">Teams</h4>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-2xl ${balance.color}`}>{balance.emoji}</span>
+                            <span className="text-sm text-gray-600">
+                              Balance: {blueTotal.toFixed(1)} vs {redTotal.toFixed(1)}
+                            </span>
                           </div>
                         </div>
-                        <div className="bg-red-50 rounded-lg p-4">
-                          <h5 className="font-bold text-red-900 mb-2">🔴 Red Team</h5>
-                          <div className="space-y-1">
-                            {matchDetails.teams
-                              .filter((t: any) => t.team === 'red')
-                              .map((t: any) => (
-                                <div key={t.id} className="text-red-800">
-                                  {t.firstName} {t.lastName}
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {/* Blue Team */}
+                          <div className="bg-blue-50 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="font-bold text-blue-900">🔵 Blue Team</h5>
+                              <span className="text-sm font-medium text-blue-900">
+                                Total: {blueTotal.toFixed(1)}
+                              </span>
+                            </div>
+
+                            {/* Defence */}
+                            {blueGrouped.D.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Defence</div>
+                                <div className="space-y-1">
+                                  {blueGrouped.D.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
+                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
                                 </div>
-                              ))}
+                              </div>
+                            )}
+
+                            {/* Midfield */}
+                            {blueGrouped.M.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Midfield</div>
+                                <div className="space-y-1">
+                                  {blueGrouped.M.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
+                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Striker */}
+                            {blueGrouped.S.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Striker</div>
+                                <div className="space-y-1">
+                                  {blueGrouped.S.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
+                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Unassigned */}
+                            {blueGrouped.unassigned.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Other</div>
+                                <div className="space-y-1">
+                                  {blueGrouped.unassigned.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
+                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Red Team */}
+                          <div className="bg-red-50 rounded-lg p-4">
+                            <div className="flex justify-between items-center mb-3">
+                              <h5 className="font-bold text-red-900">🔴 Red Team</h5>
+                              <span className="text-sm font-medium text-red-900">
+                                Total: {redTotal.toFixed(1)}
+                              </span>
+                            </div>
+
+                            {/* Defence */}
+                            {redGrouped.D.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Defence</div>
+                                <div className="space-y-1">
+                                  {redGrouped.D.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
+                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Midfield */}
+                            {redGrouped.M.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Midfield</div>
+                                <div className="space-y-1">
+                                  {redGrouped.M.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
+                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Striker */}
+                            {redGrouped.S.length > 0 && (
+                              <div className="mb-3">
+                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Striker</div>
+                                <div className="space-y-1">
+                                  {redGrouped.S.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
+                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Unassigned */}
+                            {redGrouped.unassigned.length > 0 && (
+                              <div>
+                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Other</div>
+                                <div className="space-y-1">
+                                  {redGrouped.unassigned.map((player: any) => (
+                                    <button
+                                      key={player.id}
+                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
+                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                    >
+                                      <span>{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <div className="flex gap-3 flex-wrap">
                     {matchDetails.teams.length === 0 && (
                       <button
                         onClick={() => handleGenerateTeams(selectedMatch)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium"
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium min-h-[48px]"
                       >
                         Generate Teams
                       </button>
                     )}
                     {matchDetails.teams.length > 0 && (
-                      <button
-                        onClick={shareTeams}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
-                      >
-                        Copy Teams
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleGenerateTeams(selectedMatch)}
+                          className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-medium min-h-[48px]"
+                        >
+                          Reset Teams
+                        </button>
+                        <button
+                          onClick={shareTeams}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium min-h-[48px]"
+                        >
+                          Share Teams
+                        </button>
+                      </>
                     )}
                     {matchDetails.match.status === 'upcoming' && matchDetails.teams.length > 0 && (
                       <button
                         onClick={() => handleCompleteMatch(selectedMatch)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium"
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium min-h-[48px]"
                       >
                         Mark as Completed
                       </button>
@@ -558,31 +850,76 @@ export default function ManagerDashboard() {
             <div className="space-y-3">
               {players.map((player) => (
                 <div key={player.userId} className="bg-white rounded-lg shadow p-5">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg">
-                        {player.firstName} {player.lastName}
-                      </h3>
-                      <p className="text-sm text-gray-600">@{player.username}</p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Games played: {player.gamesPlayed}
-                      </p>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">
+                          {player.firstName} {player.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-600">@{player.username}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Games played: {player.gamesPlayed}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`text-2xl font-bold ${
+                            player.balance > 0 ? 'text-red-600' : 'text-green-600'
+                          }`}
+                        >
+                          {player.balance > 0 ? '+' : ''}
+                          {formatCurrency(player.balance)}
+                        </p>
+                        <button
+                          onClick={() => setSelectedPlayer(player)}
+                          className="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                        >
+                          Record Payment
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-2xl font-bold ${
-                          player.balance > 0 ? 'text-red-600' : 'text-green-600'
-                        }`}
-                      >
-                        {player.balance > 0 ? '+' : ''}
-                        {formatCurrency(player.balance)}
-                      </p>
-                      <button
-                        onClick={() => setSelectedPlayer(player)}
-                        className="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        Record Payment
-                      </button>
+
+                    {/* Rating and Position Controls */}
+                    <div className="flex gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Rating:</label>
+                        <select
+                          value={player.rating ?? ''}
+                          onChange={(e) => handleUpdatePlayerRating(
+                            player.userId,
+                            e.target.value ? parseFloat(e.target.value) : null
+                          )}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[48px] min-w-[80px]"
+                        >
+                          <option value="">None</option>
+                          <option value="1.0">1.0</option>
+                          <option value="1.5">1.5</option>
+                          <option value="2.0">2.0</option>
+                          <option value="2.5">2.5</option>
+                          <option value="3.0">3.0</option>
+                          <option value="3.5">3.5</option>
+                          <option value="4.0">4.0</option>
+                          <option value="4.5">4.5</option>
+                          <option value="5.0">5.0</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium text-gray-700">Position:</label>
+                        <select
+                          value={player.position ?? ''}
+                          onChange={(e) => handleUpdatePlayerPosition(
+                            player.userId,
+                            e.target.value || null
+                          )}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[48px] min-w-[120px]"
+                        >
+                          <option value="">None</option>
+                          <option value="D">D (Defence)</option>
+                          <option value="M">M (Midfield)</option>
+                          <option value="S">S (Striker)</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
