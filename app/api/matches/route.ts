@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { matches, availability, teams, users } from '@/db/schema';
+import { matches, availability, teams, users, generateShortId } from '@/db/schema';
 import { generateId } from '@/lib/utils';
 import { getUserFromCookie } from '@/lib/auth';
 import { eq, desc, asc } from 'drizzle-orm';
@@ -51,19 +51,35 @@ export async function POST(request: NextRequest) {
     }
 
     const matchId = generateId();
+    let shortId = generateShortId();
+
+    // Ensure shortId is unique
+    let attempts = 0;
+    while (attempts < 10) {
+      const existing = await db.select().from(matches).where(eq(matches.shortId, shortId)).limit(1);
+      if (existing.length === 0) break;
+      shortId = generateShortId();
+      attempts++;
+    }
 
     await db.insert(matches).values({
       matchId,
+      shortId,
       date,
       time,
       location,
       status: 'upcoming',
     });
 
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const shareUrl = `${baseUrl}/m/${shortId}`;
+
     return NextResponse.json({
       success: true,
       matchId,
-      shareText: `New match ${new Date(date).toLocaleDateString('en-GB', { weekday: 'long' })} ${time} at ${location} - mark your availability: ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+      shortId,
+      shareUrl,
+      shareText: `⚽ New WNF Match\n\n📅 ${new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}\n⏰ ${time}\n📍 ${location}\n\nMark your availability:`
     });
   } catch (error) {
     console.error('Create match error:', error);

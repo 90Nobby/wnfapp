@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast';
+import { Share2 } from 'lucide-react';
 
 interface User {
   userId: string;
@@ -54,6 +56,9 @@ export default function ManagerDashboard() {
   const [players, setPlayers] = useState<User[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
+
+  // Toast notifications
+  const { showToast, ToastComponent } = useToast();
 
   useEffect(() => {
     checkAuth();
@@ -140,12 +145,45 @@ export default function ManagerDashboard() {
         setMatchForm({ date: '', time: '', location: '' });
         await loadMatches();
 
-        // Copy share text to clipboard
-        navigator.clipboard.writeText(data.shareText);
-        alert('Match created! Share text copied to clipboard.');
+        // Share the match
+        await shareMatch(data);
       }
     } catch (error) {
       console.error('Create match error:', error);
+    }
+  };
+
+  const shareMatch = async (matchData: any) => {
+    const { shareText, shareUrl } = matchData;
+    const fullShareText = `${shareText}\n${shareUrl}`;
+
+    const shareData = {
+      title: 'WNF Match',
+      text: fullShareText,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        // Mobile: use native share
+        await navigator.share(shareData);
+        showToast('Match shared successfully!');
+      } else {
+        // Desktop: copy to clipboard
+        await navigator.clipboard.writeText(fullShareText);
+        showToast('Match link copied to clipboard!');
+      }
+    } catch (err: any) {
+      // User cancelled or error occurred
+      if (err.name !== 'AbortError') {
+        // Fallback to clipboard
+        try {
+          await navigator.clipboard.writeText(fullShareText);
+          showToast('Match link copied to clipboard!');
+        } catch (clipboardErr) {
+          showToast('Failed to share match', 'error');
+        }
+      }
     }
   };
 
@@ -607,6 +645,9 @@ export default function ManagerDashboard() {
           </div>
         )}
       </div>
+
+      {/* Toast notifications */}
+      <ToastComponent />
     </div>
   );
 }

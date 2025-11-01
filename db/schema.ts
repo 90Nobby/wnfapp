@@ -11,6 +11,16 @@ export function generateUserId(): string {
   return result;
 }
 
+// Generate unique 6-character short ID for match sharing
+export function generateShortId(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 export const users = sqliteTable('users', {
   userId: text('user_id').primaryKey(),
   firstName: text('first_name').notNull(),
@@ -25,6 +35,7 @@ export const users = sqliteTable('users', {
 
 export const matches = sqliteTable('matches', {
   matchId: text('match_id').primaryKey(),
+  shortId: text('short_id').notNull().unique(),
   date: text('date').notNull(),
   time: text('time').notNull(),
   location: text('location').notNull(),
