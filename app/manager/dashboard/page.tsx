@@ -412,10 +412,14 @@ export default function ManagerDashboard() {
     return total;
   };
 
+  const getPositionCount = (team: any[], position: string | null) => {
+    return team.filter(p => p.position === position).length;
+  };
+
   const getBalanceIndicator = (blueTotal: number, redTotal: number) => {
     const diff = Math.abs(blueTotal - redTotal);
     if (diff <= 1) return { emoji: '✓', color: 'text-green-600' };
-    if (diff <= 3) return { emoji: '⚠️', color: 'text-yellow-600' };
+    if (diff <= 2) return { emoji: '⚠️', color: 'text-amber-600' };
     return { emoji: '🔴', color: 'text-red-600' };
   };
 
@@ -682,6 +686,14 @@ export default function ManagerDashboard() {
                     const redTotal = calculateTeamRating(redTeam);
                     const balance = getBalanceIndicator(blueTotal, redTotal);
 
+                    // Position counts
+                    const blueD = getPositionCount(blueTeam, 'D');
+                    const blueM = getPositionCount(blueTeam, 'M');
+                    const blueS = getPositionCount(blueTeam, 'S');
+                    const redD = getPositionCount(redTeam, 'D');
+                    const redM = getPositionCount(redTeam, 'M');
+                    const redS = getPositionCount(redTeam, 'S');
+
                     // Group by position
                     const groupByPosition = (team: any[]) => {
                       return {
@@ -697,337 +709,235 @@ export default function ManagerDashboard() {
 
                     return (
                       <div className="mb-6">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-bold text-lg">Teams</h4>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl ${balance.color}`}>{balance.emoji}</span>
-                            <span className="text-sm text-gray-600">
-                              Balance: {blueTotal.toFixed(1)} vs {redTotal.toFixed(1)}
-                            </span>
+                        {/* Compact team stats */}
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-blue-700">Blue: {blueTotal.toFixed(1)}</span>
+                              <span className="text-gray-400">|</span>
+                              <span className="font-bold text-red-700">Red: {redTotal.toFixed(1)}</span>
+                              <span className={`text-xl ${balance.color} ml-1`}>{balance.emoji}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <span>D:{blueD} M:{blueM} S:{blueS}</span>
+                            <span className="text-gray-400">|</span>
+                            <span>D:{redD} M:{redM} S:{redS}</span>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                        {/* Side-by-side compact teams */}
+                        <div className="grid grid-cols-2 gap-0 border border-gray-200 rounded-lg overflow-hidden">
                           {/* Blue Team */}
-                          <div className="bg-blue-50 rounded-lg p-2 sm:p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <h5 className="font-bold text-blue-900">🔵 Blue Team</h5>
-                              <span className="text-sm font-medium text-blue-900">
-                                Total: {blueTotal.toFixed(1)}
-                              </span>
+                          <div className="bg-blue-50/30 p-2 border-r border-gray-200">
+                            <div className="mb-2 pb-1 border-b border-blue-200">
+                              <h5 className="font-bold text-xs uppercase text-blue-900">Blue Team</h5>
                             </div>
 
                             {/* Defence */}
                             {blueGrouped.D.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Defence</div>
-                                <div className="space-y-1">
-                                  {blueGrouped.D.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedBluePlayer === player.userId
-                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
-                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-blue-700 mb-1 uppercase tracking-wide">Defence</div>
+                                {blueGrouped.D.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedBluePlayer === player.userId
+                                        ? 'border-blue-600 bg-blue-100 font-bold'
+                                        : 'border-transparent hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-blue-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Midfield */}
                             {blueGrouped.M.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Midfield</div>
-                                <div className="space-y-1">
-                                  {blueGrouped.M.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedBluePlayer === player.userId
-                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
-                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-blue-700 mb-1 uppercase tracking-wide">Midfield</div>
+                                {blueGrouped.M.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedBluePlayer === player.userId
+                                        ? 'border-blue-600 bg-blue-100 font-bold'
+                                        : 'border-transparent hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-blue-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Striker */}
                             {blueGrouped.S.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Striker</div>
-                                <div className="space-y-1">
-                                  {blueGrouped.S.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedBluePlayer === player.userId
-                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
-                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-blue-700 mb-1 uppercase tracking-wide">Striker</div>
+                                {blueGrouped.S.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedBluePlayer === player.userId
+                                        ? 'border-blue-600 bg-blue-100 font-bold'
+                                        : 'border-transparent hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-blue-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Unassigned */}
                             {blueGrouped.unassigned.length > 0 && (
                               <div>
-                                <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Other</div>
-                                <div className="space-y-1">
-                                  {blueGrouped.unassigned.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedBluePlayer === player.userId
-                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
-                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                                <div className="text-[10px] font-bold text-blue-700 mb-1 uppercase tracking-wide">Other</div>
+                                {blueGrouped.unassigned.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedBluePlayer === player.userId
+                                        ? 'border-blue-600 bg-blue-100 font-bold'
+                                        : 'border-transparent hover:bg-blue-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-blue-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
                           </div>
 
                           {/* Red Team */}
-                          <div className="bg-red-50 rounded-lg p-2 sm:p-4">
-                            <div className="flex justify-between items-center mb-3">
-                              <h5 className="font-bold text-red-900">🔴 Red Team</h5>
-                              <span className="text-sm font-medium text-red-900">
-                                Total: {redTotal.toFixed(1)}
-                              </span>
+                          <div className="bg-red-50/30 p-2">
+                            <div className="mb-2 pb-1 border-b border-red-200">
+                              <h5 className="font-bold text-xs uppercase text-red-900">Red Team</h5>
                             </div>
 
                             {/* Defence */}
                             {redGrouped.D.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Defence</div>
-                                <div className="space-y-1">
-                                  {redGrouped.D.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedRedPlayer === player.userId
-                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
-                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-red-700 mb-1 uppercase tracking-wide">Defence</div>
+                                {redGrouped.D.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedRedPlayer === player.userId
+                                        ? 'border-red-600 bg-red-100 font-bold'
+                                        : 'border-transparent hover:bg-red-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-red-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-red-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Midfield */}
                             {redGrouped.M.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Midfield</div>
-                                <div className="space-y-1">
-                                  {redGrouped.M.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedRedPlayer === player.userId
-                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
-                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-red-700 mb-1 uppercase tracking-wide">Midfield</div>
+                                {redGrouped.M.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedRedPlayer === player.userId
+                                        ? 'border-red-600 bg-red-100 font-bold'
+                                        : 'border-transparent hover:bg-red-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-red-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-red-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Striker */}
                             {redGrouped.S.length > 0 && (
-                              <div className="mb-3">
-                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Striker</div>
-                                <div className="space-y-1">
-                                  {redGrouped.S.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedRedPlayer === player.userId
-                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
-                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                              <div className="mb-2">
+                                <div className="text-[10px] font-bold text-red-700 mb-1 uppercase tracking-wide">Striker</div>
+                                {redGrouped.S.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedRedPlayer === player.userId
+                                        ? 'border-red-600 bg-red-100 font-bold'
+                                        : 'border-transparent hover:bg-red-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-red-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-red-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
 
                             {/* Unassigned */}
                             {redGrouped.unassigned.length > 0 && (
                               <div>
-                                <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Other</div>
-                                <div className="space-y-1">
-                                  {redGrouped.unassigned.map((player: any) => (
-                                    <div
-                                      key={player.id}
-                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
-                                        selectedRedPlayer === player.userId
-                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
-                                          {player.rating?.toFixed(1) || '-'}
-                                        </span>
-                                        <button
-                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                          className="truncate text-left hover:underline"
-                                        >
-                                          {player.firstName} {player.lastName}
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
-                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
-                                        title="Remove player"
-                                      >
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
+                                <div className="text-[10px] font-bold text-red-700 mb-1 uppercase tracking-wide">Other</div>
+                                {redGrouped.unassigned.map((player: any) => (
+                                  <button
+                                    key={player.id}
+                                    onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                      selectedRedPlayer === player.userId
+                                        ? 'border-red-600 bg-red-100 font-bold'
+                                        : 'border-transparent hover:bg-red-50'
+                                    }`}
+                                  >
+                                    <span className="text-xs font-semibold text-red-700 min-w-[28px]">
+                                      {player.rating?.toFixed(1) || '-'}
+                                    </span>
+                                    <span className="truncate text-red-900">
+                                      {player.firstName}
+                                    </span>
+                                  </button>
+                                ))}
                               </div>
                             )}
                           </div>
