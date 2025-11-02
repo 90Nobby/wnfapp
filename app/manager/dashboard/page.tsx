@@ -611,20 +611,34 @@ export default function ManagerDashboard() {
             </div>
 
             {selectedMatch && matchDetails && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-                <div className="bg-white rounded-2xl p-6 w-full max-w-4xl my-8">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-2xl font-bold">Manage Match</h3>
-                    <button
-                      onClick={() => {
-                        setSelectedMatch(null);
-                        setMatchDetails(null);
-                      }}
-                      className="text-gray-500 hover:text-gray-700 text-2xl"
-                    >
-                      ×
-                    </button>
-                  </div>
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto"
+                onClick={() => {
+                  setSelectedMatch(null);
+                  setMatchDetails(null);
+                  setSelectedBluePlayer(null);
+                  setSelectedRedPlayer(null);
+                }}
+              >
+                <div
+                  className="min-h-screen flex items-start justify-center p-4 py-8"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="bg-white rounded-2xl p-6 w-full max-w-4xl my-8 relative">
+                    <div className="flex justify-between items-start mb-6 sticky top-0 bg-white pt-2 pb-4 -mx-6 px-6 z-10 rounded-t-2xl">
+                      <h3 className="text-2xl font-bold">Manage Match</h3>
+                      <button
+                        onClick={() => {
+                          setSelectedMatch(null);
+                          setMatchDetails(null);
+                          setSelectedBluePlayer(null);
+                          setSelectedRedPlayer(null);
+                        }}
+                        className="text-gray-500 hover:text-gray-700 text-3xl leading-none min-h-[48px] min-w-[48px] flex items-center justify-center -mr-2 -mt-2"
+                      >
+                        ×
+                      </button>
+                    </div>
 
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-3">
@@ -958,6 +972,7 @@ export default function ManagerDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
             )}
           </div>
         )}
