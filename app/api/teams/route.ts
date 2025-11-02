@@ -106,59 +106,33 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Snake draft algorithm
-    // 1. Separate players by position (D, M, S) and those without position
-    const defenders = confirmed.filter(p => p.position === 'D')
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    const midfielders = confirmed.filter(p => p.position === 'M')
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    const strikers = confirmed.filter(p => p.position === 'S')
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    const unassigned = confirmed.filter(p => !p.position)
-      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    // Snake draft algorithm for balanced teams
+    // 1. Sort all players by rating (highest to lowest)
+    const sortedPlayers = [...confirmed].sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-    // 2. Snake draft within each position group
-    const snakeDraft = (players: typeof confirmed) => {
-      const blue: string[] = [];
-      const red: string[] = [];
-      let toBlue = true;
+    // 2. Snake draft: alternating picks with direction reversal
+    // Pattern: A, B, B, A, A, B, B, A, A, B...
+    const blueTeam: string[] = [];
+    const redTeam: string[] = [];
 
-      for (let i = 0; i < players.length; i++) {
-        if (toBlue) {
-          blue.push(players[i].userId);
-        } else {
-          red.push(players[i].userId);
-        }
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      // Determine which "round" we're in (each round = 2 picks)
+      const round = Math.floor(i / 2);
 
-        // Snake: flip direction every 2 players
-        if ((i + 1) % 2 === 0) {
-          toBlue = !toBlue;
-        }
+      // In even rounds (0, 2, 4...), blue picks first
+      // In odd rounds (1, 3, 5...), red picks first (snake reversal)
+      const bluePicksFirst = round % 2 === 0;
+
+      // Is this the first or second pick in the current round?
+      const isFirstPickInRound = i % 2 === 0;
+
+      // Assign player to team based on snake draft logic
+      if ((bluePicksFirst && isFirstPickInRound) || (!bluePicksFirst && !isFirstPickInRound)) {
+        blueTeam.push(sortedPlayers[i].userId);
+      } else {
+        redTeam.push(sortedPlayers[i].userId);
       }
-
-      return { blue, red };
-    };
-
-    // 3. Draft each position group
-    const draftedDefenders = snakeDraft(defenders);
-    const draftedMidfielders = snakeDraft(midfielders);
-    const draftedStrikers = snakeDraft(strikers);
-    const draftedUnassigned = snakeDraft(unassigned);
-
-    // 4. Combine all positions
-    const blueTeam = [
-      ...draftedDefenders.blue,
-      ...draftedMidfielders.blue,
-      ...draftedStrikers.blue,
-      ...draftedUnassigned.blue,
-    ];
-
-    const redTeam = [
-      ...draftedDefenders.red,
-      ...draftedMidfielders.red,
-      ...draftedStrikers.red,
-      ...draftedUnassigned.red,
-    ];
+    }
 
     // Delete existing teams
     await db.delete(teams).where(eq(teams.matchId, matchId));
