@@ -709,29 +709,16 @@ export default function ManagerDashboard() {
 
                     return (
                       <div className="mb-6">
-                        {/* Compact team stats */}
-                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-blue-700">Blue: {blueTotal.toFixed(1)}</span>
-                              <span className="text-gray-400">|</span>
-                              <span className="font-bold text-red-700">Red: {redTotal.toFixed(1)}</span>
-                              <span className={`text-xl ${balance.color} ml-1`}>{balance.emoji}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-gray-600">
-                            <span>D:{blueD} M:{blueM} S:{blueS}</span>
-                            <span className="text-gray-400">|</span>
-                            <span>D:{redD} M:{redM} S:{redS}</span>
-                          </div>
-                        </div>
-
                         {/* Side-by-side compact teams */}
                         <div className="grid grid-cols-2 gap-0 border border-gray-200 rounded-lg overflow-hidden">
                           {/* Blue Team */}
                           <div className="bg-blue-50/30 p-2 border-r border-gray-200">
                             <div className="mb-2 pb-1 border-b border-blue-200">
-                              <h5 className="font-bold text-xs uppercase text-blue-900">Blue Team</h5>
+                              <div className="flex items-center justify-between">
+                                <h5 className="font-bold text-xs uppercase text-blue-900">Blue Team</h5>
+                                <span className="font-bold text-sm text-blue-700">{blueTotal.toFixed(1)}</span>
+                              </div>
+                              <div className="text-[10px] text-blue-600 mt-0.5">D:{blueD} M:{blueM} S:{blueS}</div>
                             </div>
 
                             {/* Defence */}
@@ -742,10 +729,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedBluePlayer === player.userId
-                                        ? 'border-blue-600 bg-blue-100 font-bold'
-                                        : 'border-transparent hover:bg-blue-50'
+                                        ? 'border-blue-600 bg-blue-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
@@ -767,10 +754,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedBluePlayer === player.userId
-                                        ? 'border-blue-600 bg-blue-100 font-bold'
-                                        : 'border-transparent hover:bg-blue-50'
+                                        ? 'border-blue-600 bg-blue-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
@@ -792,10 +779,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedBluePlayer === player.userId
-                                        ? 'border-blue-600 bg-blue-100 font-bold'
-                                        : 'border-transparent hover:bg-blue-50'
+                                        ? 'border-blue-600 bg-blue-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
@@ -817,10 +804,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedBluePlayer === player.userId
-                                        ? 'border-blue-600 bg-blue-100 font-bold'
-                                        : 'border-transparent hover:bg-blue-50'
+                                        ? 'border-blue-600 bg-blue-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-blue-100 hover:border-blue-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-blue-700 min-w-[28px]">
@@ -838,7 +825,14 @@ export default function ManagerDashboard() {
                           {/* Red Team */}
                           <div className="bg-red-50/30 p-2">
                             <div className="mb-2 pb-1 border-b border-red-200">
-                              <h5 className="font-bold text-xs uppercase text-red-900">Red Team</h5>
+                              <div className="flex items-center justify-between">
+                                <h5 className="font-bold text-xs uppercase text-red-900">Red Team</h5>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-bold text-sm text-red-700">{redTotal.toFixed(1)}</span>
+                                  <span className={`text-sm ${balance.color}`}>{balance.emoji}</span>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-red-600 mt-0.5">D:{redD} M:{redM} S:{redS}</div>
                             </div>
 
                             {/* Defence */}
@@ -849,10 +843,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedRedPlayer === player.userId
-                                        ? 'border-red-600 bg-red-100 font-bold'
-                                        : 'border-transparent hover:bg-red-50'
+                                        ? 'border-red-600 bg-red-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-red-100 hover:border-red-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-red-700 min-w-[28px]">
@@ -874,10 +868,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedRedPlayer === player.userId
-                                        ? 'border-red-600 bg-red-100 font-bold'
-                                        : 'border-transparent hover:bg-red-50'
+                                        ? 'border-red-600 bg-red-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-red-100 hover:border-red-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-red-700 min-w-[28px]">
@@ -899,10 +893,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedRedPlayer === player.userId
-                                        ? 'border-red-600 bg-red-100 font-bold'
-                                        : 'border-transparent hover:bg-red-50'
+                                        ? 'border-red-600 bg-red-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-red-100 hover:border-red-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-red-700 min-w-[28px]">
@@ -924,10 +918,10 @@ export default function ManagerDashboard() {
                                   <button
                                     key={player.id}
                                     onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 ${
+                                    className={`w-full text-left py-1.5 px-2 text-sm min-h-[44px] flex items-center gap-2 transition-all border-l-2 rounded cursor-pointer ${
                                       selectedRedPlayer === player.userId
-                                        ? 'border-red-600 bg-red-100 font-bold'
-                                        : 'border-transparent hover:bg-red-50'
+                                        ? 'border-red-600 bg-red-100 font-bold shadow-sm'
+                                        : 'border-transparent bg-white/50 hover:bg-red-100 hover:border-red-400 hover:shadow-sm active:scale-[0.98]'
                                     }`}
                                   >
                                     <span className="text-xs font-semibold text-red-700 min-w-[28px]">
