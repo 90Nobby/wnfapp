@@ -54,6 +54,10 @@ export default function ManagerDashboard() {
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
   const [matchDetails, setMatchDetails] = useState<any>(null);
 
+  // Team swap state
+  const [selectedBluePlayer, setSelectedBluePlayer] = useState<string | null>(null);
+  const [selectedRedPlayer, setSelectedRedPlayer] = useState<string | null>(null);
+
   // Player management
   const [players, setPlayers] = useState<User[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
@@ -306,8 +310,26 @@ export default function ManagerDashboard() {
     }
   };
 
-  const handleSwapPlayer = async (playerId: string, currentTeam: 'blue' | 'red') => {
-    if (!selectedMatch) return;
+  const handleSelectPlayer = (playerId: string, team: 'blue' | 'red') => {
+    if (team === 'blue') {
+      // If clicking the same player, deselect
+      if (selectedBluePlayer === playerId) {
+        setSelectedBluePlayer(null);
+      } else {
+        setSelectedBluePlayer(playerId);
+      }
+    } else {
+      // If clicking the same player, deselect
+      if (selectedRedPlayer === playerId) {
+        setSelectedRedPlayer(null);
+      } else {
+        setSelectedRedPlayer(playerId);
+      }
+    }
+  };
+
+  const handleSwapPlayers = async () => {
+    if (!selectedMatch || !selectedBluePlayer || !selectedRedPlayer) return;
 
     try {
       // Get current teams
@@ -318,17 +340,13 @@ export default function ManagerDashboard() {
         .filter((t: any) => t.team === 'red')
         .map((t: any) => t.userId);
 
-      // Swap player
-      let newBlueTeam = [...blueTeam];
-      let newRedTeam = [...redTeam];
-
-      if (currentTeam === 'blue') {
-        newBlueTeam = newBlueTeam.filter(id => id !== playerId);
-        newRedTeam.push(playerId);
-      } else {
-        newRedTeam = newRedTeam.filter(id => id !== playerId);
-        newBlueTeam.push(playerId);
-      }
+      // Swap the two selected players
+      const newBlueTeam = blueTeam.map((id: string) =>
+        id === selectedBluePlayer ? selectedRedPlayer : id
+      );
+      const newRedTeam = redTeam.map((id: string) =>
+        id === selectedRedPlayer ? selectedBluePlayer : id
+      );
 
       // Update teams in database
       const response = await fetch('/api/teams', {
@@ -345,11 +363,13 @@ export default function ManagerDashboard() {
 
       if (response.ok) {
         await loadMatchDetails(selectedMatch);
-        showToast('Player swapped');
+        setSelectedBluePlayer(null);
+        setSelectedRedPlayer(null);
+        showToast('Players swapped');
       }
     } catch (error) {
-      console.error('Swap player error:', error);
-      showToast('Failed to swap player', 'error');
+      console.error('Swap players error:', error);
+      showToast('Failed to swap players', 'error');
     }
   };
 
@@ -681,9 +701,9 @@ export default function ManagerDashboard() {
                           </div>
                         </div>
 
-                        <div className="grid md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-4">
                           {/* Blue Team */}
-                          <div className="bg-blue-50 rounded-lg p-4">
+                          <div className="bg-blue-50 rounded-lg p-2 sm:p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h5 className="font-bold text-blue-900">🔵 Blue Team</h5>
                               <span className="text-sm font-medium text-blue-900">
@@ -699,11 +719,15 @@ export default function ManagerDashboard() {
                                   {blueGrouped.D.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
-                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedBluePlayer === player.userId
+                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
+                                          : 'bg-blue-100 hover:bg-blue-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -718,11 +742,15 @@ export default function ManagerDashboard() {
                                   {blueGrouped.M.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
-                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedBluePlayer === player.userId
+                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
+                                          : 'bg-blue-100 hover:bg-blue-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -737,11 +765,15 @@ export default function ManagerDashboard() {
                                   {blueGrouped.S.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
-                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedBluePlayer === player.userId
+                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
+                                          : 'bg-blue-100 hover:bg-blue-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -756,11 +788,15 @@ export default function ManagerDashboard() {
                                   {blueGrouped.unassigned.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'blue')}
-                                      className="w-full text-left p-2 bg-blue-100 hover:bg-blue-200 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedBluePlayer === player.userId
+                                          ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
+                                          : 'bg-blue-100 hover:bg-blue-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -769,7 +805,7 @@ export default function ManagerDashboard() {
                           </div>
 
                           {/* Red Team */}
-                          <div className="bg-red-50 rounded-lg p-4">
+                          <div className="bg-red-50 rounded-lg p-2 sm:p-4">
                             <div className="flex justify-between items-center mb-3">
                               <h5 className="font-bold text-red-900">🔴 Red Team</h5>
                               <span className="text-sm font-medium text-red-900">
@@ -785,11 +821,15 @@ export default function ManagerDashboard() {
                                   {redGrouped.D.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
-                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedRedPlayer === player.userId
+                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
+                                          : 'bg-red-100 hover:bg-red-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -804,11 +844,15 @@ export default function ManagerDashboard() {
                                   {redGrouped.M.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
-                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedRedPlayer === player.userId
+                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
+                                          : 'bg-red-100 hover:bg-red-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -823,11 +867,15 @@ export default function ManagerDashboard() {
                                   {redGrouped.S.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
-                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedRedPlayer === player.userId
+                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
+                                          : 'bg-red-100 hover:bg-red-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -842,11 +890,15 @@ export default function ManagerDashboard() {
                                   {redGrouped.unassigned.map((player: any) => (
                                     <button
                                       key={player.id}
-                                      onClick={() => handleSwapPlayer(player.userId, 'red')}
-                                      className="w-full text-left p-2 bg-red-100 hover:bg-red-200 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-colors"
+                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                        selectedRedPlayer === player.userId
+                                          ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
+                                          : 'bg-red-100 hover:bg-red-200'
+                                      }`}
                                     >
-                                      <span>{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium">{player.rating?.toFixed(1) || '-'}</span>
+                                      <span className="truncate">{player.firstName} {player.lastName}</span>
+                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -857,6 +909,18 @@ export default function ManagerDashboard() {
                       </div>
                     );
                   })()}
+
+                  {/* Swap Players Button */}
+                  {selectedBluePlayer && selectedRedPlayer && (
+                    <div className="mb-4">
+                      <button
+                        onClick={handleSwapPlayers}
+                        className="w-full bg-gradient-to-r from-blue-600 to-red-600 hover:from-blue-700 hover:to-red-700 text-white px-6 py-3 rounded-lg font-medium min-h-[48px] shadow-lg transition-all"
+                      >
+                        ⇄ Swap Selected Players
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex gap-3 flex-wrap">
                     {matchDetails.teams.length === 0 && (
