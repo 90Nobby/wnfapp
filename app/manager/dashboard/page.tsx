@@ -384,6 +384,53 @@ export default function ManagerDashboard() {
     showToast('Teams copied to clipboard!');
   };
 
+  const handleSeedPlayers = async (matchId?: string) => {
+    try {
+      const response = await fetch('/api/dev/seed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numberOfPlayers: 20,
+          matchId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showToast(`Created ${data.playersCreated} test players!`);
+        await loadPlayers();
+        if (matchId) {
+          await loadMatchDetails(matchId);
+        }
+      }
+    } catch (error) {
+      console.error('Seed players error:', error);
+      showToast('Failed to seed players', 'error');
+    }
+  };
+
+  const handleClearTestPlayers = async () => {
+    if (!confirm('Delete all non-manager players? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/dev/seed', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        showToast('All test players deleted');
+        await loadPlayers();
+      }
+    } catch (error) {
+      console.error('Delete players error:', error);
+      showToast('Failed to delete players', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -560,9 +607,17 @@ export default function ManagerDashboard() {
                   </div>
 
                   <div className="mb-6">
-                    <h4 className="font-bold text-lg mb-3">
-                      Availability ({matchDetails.availability.length} players)
-                    </h4>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-bold text-lg">
+                        Availability ({matchDetails.availability.length} players)
+                      </h4>
+                      <button
+                        onClick={() => handleSeedPlayers(selectedMatch)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                      >
+                        + Seed 20 Players
+                      </button>
+                    </div>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {matchDetails.availability.map((player: Player, index: number) => (
                         <div
@@ -845,7 +900,23 @@ export default function ManagerDashboard() {
 
         {activeTab === 'players' && (
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Players</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Players</h2>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleSeedPlayers()}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                >
+                  + Seed 20 Players
+                </button>
+                <button
+                  onClick={handleClearTestPlayers}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                >
+                  Clear All Players
+                </button>
+              </div>
+            </div>
 
             <div className="space-y-3">
               {players.map((player) => (
