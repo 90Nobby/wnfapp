@@ -5,6 +5,101 @@ import { getUserFromCookie } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
 import { generateId } from '@/lib/utils';
 
+// DELETE - Remove a player from a team and mark unavailable
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getUserFromCookie();
+
+    if (!user || !user.isManager) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Manager access required' },
+        { status: 403 }
+      );
+    }
+
+    const { matchId, userId, team } = await request.json();
+
+    if (!matchId || !userId || !team) {
+      return NextResponse.json(
+        { error: 'Match ID, user ID, and team are required' },
+        { status: 400 }
+      );
+    }
+
+    // Remove player from team
+    await db.delete(teams).where(
+      and(
+        eq(teams.matchId, matchId),
+        eq(teams.userId, userId)
+      )
+    );
+
+    // Delete their availability (marks as unavailable)
+    await db.delete(availability).where(
+      and(
+        eq(availability.matchId, matchId),
+        eq(availability.userId, userId)
+      )
+    );
+
+    // Check for reserve players to auto-add
+    const reserves = await db
+      .select({
+        userId: availability.userId,
+        timestamp: availability.timestamp,
+      })
+      .from(availability)
+      .where(
+        and(
+          eq(availability.matchId, matchId),
+          eq(availability.status, 'reserve')
+        )
+      )
+      .orderBy(availability.timestamp); // First come, first serve
+
+    // If there's a reserve, add them to the team
+    if (reserves.length > 0) {
+      const firstReserve = reserves[0];
+
+      // Add reserve to the team
+      await db.insert(teams).values({
+        id: generateId(),
+        matchId,
+        userId: firstReserve.userId,
+        team,
+      });
+
+      // Update reserve status to confirmed
+      await db
+        .update(availability)
+        .set({ status: 'confirmed' })
+        .where(
+          and(
+            eq(availability.matchId, matchId),
+            eq(availability.userId, firstReserve.userId)
+          )
+        );
+
+      return NextResponse.json({
+        success: true,
+        addedReserve: firstReserve.userId,
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      addedReserve: null,
+    });
+  } catch (error) {
+    console.error('Remove player error:', error);
+    return NextResponse.json(
+      { error: 'Failed to remove player' },
+      { status: 500 }
+    );
+  }
+}
+
+
 // POST - Create or update teams for a match
 export async function POST(request: NextRequest) {
   try {

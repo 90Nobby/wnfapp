@@ -373,6 +373,40 @@ export default function ManagerDashboard() {
     }
   };
 
+  const handleRemovePlayer = async (userId: string, team: 'blue' | 'red') => {
+    if (!selectedMatch || !confirm('Remove this player from the team? They will be marked as unavailable.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/teams', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          matchId: selectedMatch,
+          userId,
+          team,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await loadMatchDetails(selectedMatch);
+
+        if (data.addedReserve) {
+          showToast('Player removed and reserve added');
+        } else {
+          showToast('Player removed from team');
+        }
+      }
+    } catch (error) {
+      console.error('Remove player error:', error);
+      showToast('Failed to remove player', 'error');
+    }
+  };
+
   const calculateTeamRating = (team: any[]) => {
     const total = team.reduce((sum, player) => sum + (player.rating || 0), 0);
     return total;
@@ -640,49 +674,7 @@ export default function ManagerDashboard() {
                       </button>
                     </div>
 
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-bold text-lg">
-                        Availability ({matchDetails.availability.length} players)
-                      </h4>
-                      <button
-                        onClick={() => handleSeedPlayers(selectedMatch)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                      >
-                        + Seed 20 Players
-                      </button>
-                    </div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {matchDetails.availability.map((player: Player, index: number) => (
-                        <div
-                          key={player.userId}
-                          className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-600 font-mono">{index + 1}.</span>
-                            <span className="font-medium">
-                              {player.firstName} {player.lastName}
-                            </span>
-                            {player.wasReserveLastMatch && (
-                              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                Priority
-                              </span>
-                            )}
-                          </div>
-                          <span
-                            className={`text-sm font-medium px-3 py-1 rounded ${
-                              player.status === 'confirmed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}
-                          >
-                            {player.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
+                  {/* Teams Section - Show first if generated */}
                   {matchDetails.teams.length > 0 && (() => {
                     const blueTeam = matchDetails.teams.filter((t: any) => t.team === 'blue');
                     const redTeam = matchDetails.teams.filter((t: any) => t.team === 'red');
@@ -731,18 +723,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Defence</div>
                                 <div className="space-y-1">
                                   {blueGrouped.D.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedBluePlayer === player.userId
                                           ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100 hover:bg-blue-200'
+                                          : 'bg-blue-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
+                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -754,18 +761,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Midfield</div>
                                 <div className="space-y-1">
                                   {blueGrouped.M.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedBluePlayer === player.userId
                                           ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100 hover:bg-blue-200'
+                                          : 'bg-blue-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
+                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -777,18 +799,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Striker</div>
                                 <div className="space-y-1">
                                   {blueGrouped.S.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedBluePlayer === player.userId
                                           ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100 hover:bg-blue-200'
+                                          : 'bg-blue-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
+                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -800,18 +837,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-blue-800 mb-1 uppercase">Other</div>
                                 <div className="space-y-1">
                                   {blueGrouped.unassigned.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'blue')}
-                                      className={`w-full text-left p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-blue-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedBluePlayer === player.userId
                                           ? 'bg-blue-300 ring-2 ring-blue-600 shadow-md'
-                                          : 'bg-blue-100 hover:bg-blue-200'
+                                          : 'bg-blue-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'blue')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'blue')}
+                                        className="text-blue-600 hover:text-blue-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -833,18 +885,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Defence</div>
                                 <div className="space-y-1">
                                   {redGrouped.D.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedRedPlayer === player.userId
                                           ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100 hover:bg-red-200'
+                                          : 'bg-red-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
+                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -856,18 +923,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Midfield</div>
                                 <div className="space-y-1">
                                   {redGrouped.M.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedRedPlayer === player.userId
                                           ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100 hover:bg-red-200'
+                                          : 'bg-red-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
+                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -879,18 +961,33 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Striker</div>
                                 <div className="space-y-1">
                                   {redGrouped.S.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedRedPlayer === player.userId
                                           ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100 hover:bg-red-200'
+                                          : 'bg-red-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
+                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -902,23 +999,124 @@ export default function ManagerDashboard() {
                                 <div className="text-xs font-semibold text-red-800 mb-1 uppercase">Other</div>
                                 <div className="space-y-1">
                                   {redGrouped.unassigned.map((player: any) => (
-                                    <button
+                                    <div
                                       key={player.id}
-                                      onClick={() => handleSelectPlayer(player.userId, 'red')}
-                                      className={`w-full text-left p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
+                                      className={`w-full p-2 rounded text-red-900 text-sm min-h-[48px] flex items-center justify-between transition-all ${
                                         selectedRedPlayer === player.userId
                                           ? 'bg-red-300 ring-2 ring-red-600 shadow-md'
-                                          : 'bg-red-100 hover:bg-red-200'
+                                          : 'bg-red-100'
                                       }`}
                                     >
-                                      <span className="truncate">{player.firstName} {player.lastName}</span>
-                                      <span className="font-medium ml-1">{player.rating?.toFixed(1) || '-'}</span>
-                                    </button>
+                                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <span className="bg-red-200 text-red-900 px-2 py-0.5 rounded-full text-xs font-bold min-w-[32px] text-center">
+                                          {player.rating?.toFixed(1) || '-'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleSelectPlayer(player.userId, 'red')}
+                                          className="truncate text-left hover:underline"
+                                        >
+                                          {player.firstName} {player.lastName}
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => handleRemovePlayer(player.userId, 'red')}
+                                        className="text-red-600 hover:text-red-800 font-bold text-lg ml-2 min-w-[32px]"
+                                        title="Remove player"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
                                   ))}
                                 </div>
                               </div>
                             )}
                           </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Reserves Section */}
+                  {(() => {
+                    const reserves = matchDetails.availability.filter((p: Player) => p.status === 'reserve');
+                    if (reserves.length === 0) return null;
+
+                    return (
+                      <div className="mb-6">
+                        <h4 className="font-bold text-lg mb-3">
+                          Reserves ({reserves.length})
+                        </h4>
+                        <div className="space-y-2">
+                          {reserves.map((player: Player, index: number) => (
+                            <div
+                              key={player.userId}
+                              className="flex justify-between items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-yellow-700 font-mono">{index + 1}.</span>
+                                <span className="font-medium">
+                                  {player.firstName} {player.lastName}
+                                </span>
+                                {player.wasReserveLastMatch && (
+                                  <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                                    Priority
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-sm font-medium px-3 py-1 rounded bg-yellow-200 text-yellow-800">
+                                reserve
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Availability - Only confirmed players not in teams */}
+                  {(() => {
+                    const teamPlayerIds = new Set(matchDetails.teams.map((t: any) => t.userId));
+                    const availablePlayers = matchDetails.availability.filter(
+                      (p: Player) => p.status === 'confirmed' && !teamPlayerIds.has(p.userId)
+                    );
+
+                    if (availablePlayers.length === 0) return null;
+
+                    return (
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-bold text-lg">
+                            Available Players ({availablePlayers.length})
+                          </h4>
+                          <button
+                            onClick={() => handleSeedPlayers(selectedMatch)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                          >
+                            + Seed 20 Players
+                          </button>
+                        </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {availablePlayers.map((player: Player, index: number) => (
+                            <div
+                              key={player.userId}
+                              className="flex justify-between items-center p-3 bg-green-50 border border-green-200 rounded-lg"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-green-700 font-mono">{index + 1}.</span>
+                                <span className="font-medium">
+                                  {player.firstName} {player.lastName}
+                                </span>
+                                {player.wasReserveLastMatch && (
+                                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                    Priority
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-sm font-medium px-3 py-1 rounded bg-green-200 text-green-800">
+                                confirmed
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
