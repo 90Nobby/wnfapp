@@ -106,12 +106,38 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Snake draft algorithm for balanced teams
-    // 1. Sort all players by rating (highest to lowest)
-    const sortedPlayers = [...confirmed].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    // Balanced team generation algorithm
+    // Primary: Balance total team ratings
+    // Secondary: Distribute positions evenly across teams
 
-    // 2. Snake draft: alternating picks with direction reversal
-    // Pattern: A, B, B, A, A, B, B, A, A, B...
+    // 1. Group players by position and sort each group by rating
+    const defenders = confirmed.filter(p => p.position === 'D')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const midfielders = confirmed.filter(p => p.position === 'M')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const strikers = confirmed.filter(p => p.position === 'S')
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const unassigned = confirmed.filter(p => !p.position)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+    // 2. Interleave positions in round-robin fashion to distribute them evenly
+    // This creates a draft order that naturally spreads positions across teams
+    const positionGroups = [defenders, midfielders, strikers, unassigned].filter(g => g.length > 0);
+    const sortedPlayers: typeof confirmed = [];
+
+    let allEmpty = false;
+    while (!allEmpty) {
+      allEmpty = true;
+      for (const group of positionGroups) {
+        if (group.length > 0) {
+          sortedPlayers.push(group.shift()!);
+          allEmpty = false;
+        }
+      }
+    }
+
+    // 3. Snake draft: alternating picks with direction reversal
+    // Pattern: Blue, Red, Red, Blue, Blue, Red, Red, Blue...
     const blueTeam: string[] = [];
     const redTeam: string[] = [];
 
